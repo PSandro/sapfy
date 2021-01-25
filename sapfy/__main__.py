@@ -37,9 +37,10 @@ def main():
     try:
         if (not options.ads_only):
             J_CLIENT.activate()
-            sinks = J_CLIENT.get_ports('spotify*')
-            MUSIC_L.connect(sinks[0])
-            MUSIC_R.connect(sinks[1])
+            sinks = J_CLIENT.get_ports('spotify:*', is_output=True)
+            J_CLIENT.connect(sinks[0], MUSIC_L)
+            J_CLIENT.connect(sinks[1], MUSIC_R)
+
         LOOP.run()
     except KeyboardInterrupt:
         print()
