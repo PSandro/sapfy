@@ -46,6 +46,8 @@ class Song:
         self.file_name += f'.{out_format.lower()}'
         self.file_name = path.join(target_folder, self.file_name)
 
+        os.makedirs(path.dirname(self.file_name), exist_ok=True)
+
         self.xruns = Counter()
         self.xrun_time = Counter(.0)
         # TODO Compression configuration?
