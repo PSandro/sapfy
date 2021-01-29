@@ -44,7 +44,9 @@ class Song:
 
         self.file_name = path.normpath(file_path.format(**self.info._asdict()))
         self.file_name += f'.{out_format.lower()}'
+        self.tmp_file_name = path.join(target_folder, self.file_name + ".tmp")
         self.file_name = path.join(target_folder, self.file_name)
+
 
         os.makedirs(path.dirname(self.file_name), exist_ok=True)
 
@@ -52,7 +54,7 @@ class Song:
         self.xrun_time = Counter(.0)
         # TODO Compression configuration?
         self.sound_file = sf.SoundFile(
-            self.file_name,
+            self.tmp_file_name,
             mode='w',
             samplerate=J_CLIENT.samplerate,
             channels=2,
@@ -84,7 +86,7 @@ class Song:
             return False
         self.sound_file.close()
         l.info("Flushed %s to disk successfully", path.basename(
-            self.file_name))
+            self.tmp_file_name))
         # Do warn the user, regardless if strict or not.
         if not within_diff(self.duration, self.info.length, 4):
             l.warning('Actual song length was %d secs when metadata said it'
@@ -95,12 +97,17 @@ class Song:
         if not within_diff(self.duration, self.info.length, max_diff):
             l.info('The recording differs more than %d secs from the metadata'
                    ' length. Erasing it, as requested.', max_diff)
-            os.remove(self.file_name)
+            os.remove(self.tmp_file_name)
             return False
         # TODO Max xruns
-        metadata: mt.FileType = mt.File(self.file_name)
+        metadata: mt.FileType = mt.File(self.tmp_file_name)
         metadata.update(Song.info_to_metadata(self.info._asdict()))
         metadata.save()
+
+        # rename (and move) tmp song file
+        os.replace(self.tmp_file_name, self.file_name)
+        l.debug('created (or replaced) %s by using %s', path.basename(
+            self.file_name), path.basename(self.tmp_file_name))
         return True
 
     def write_buffer(self, l_channel, r_channel):
